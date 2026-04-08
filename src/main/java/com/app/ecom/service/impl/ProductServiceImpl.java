@@ -1,0 +1,85 @@
+package com.app.ecom.service.impl;
+
+import com.app.ecom.dto.ProductRequest;
+import com.app.ecom.dto.ProductResponse;
+import com.app.ecom.entity.Product;
+import com.app.ecom.repository.ProductRepository;
+import com.app.ecom.service.ProductService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ProductServiceImpl implements ProductService {
+
+    private final ProductRepository productRepository;
+    @Override
+    public ProductResponse createProduct(ProductRequest productRequest) {
+        Product product = new Product();
+        updateProductFromRequest(product,productRequest);
+        Product savedProduct = productRepository.save(product);
+        return mapTOProductResponse(savedProduct);
+    }
+
+    @Override
+    public Optional<ProductResponse> updateProduct(Long id, ProductRequest productRequest) {
+        return productRepository.findById(id)
+                .map(product ->{
+                    updateProductFromRequest(product,productRequest);
+                    Product updatedProduct = productRepository.save(product);
+                    return mapTOProductResponse(updatedProduct);
+                });
+    }
+
+    @Override
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findByActiveTrue()
+                .stream()
+                .map(this::mapTOProductResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean deleteProduct(Long id) {
+        return productRepository.findById(id)
+                .map(product -> {
+                    product.setActive(false);
+                    productRepository.save(product);
+                    return true;
+                }).orElse(false);
+    }
+
+    @Override
+    public List<ProductResponse> searchProduct(String keyword) {
+        return productRepository.searchProducts(keyword)
+                .stream()
+                .map(this::mapTOProductResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ProductResponse mapTOProductResponse(Product savedProduct) {
+        ProductResponse response = new ProductResponse();
+        response.setId(String.valueOf(savedProduct.getId()));
+        response.setName(savedProduct.getName());
+        response.setDescription(savedProduct.getDescription());
+        response.setCategory(savedProduct.getCategory());
+        response.setStockQuantity(savedProduct.getStockQuantity());
+        response.setActive(savedProduct.getActive().toString());
+        response.setImgUrl(savedProduct.getImgUrl());
+        response.setPrice(savedProduct.getPrice());
+        return response;
+    }
+
+    private void updateProductFromRequest(Product product, ProductRequest productRequest) {
+        product.setName(productRequest.getName());
+        product.setDescription(productRequest.getDescription());
+        product.setCategory(productRequest.getCategory());
+        product.setPrice(productRequest.getPrice());
+        product.setStockQuantity(productRequest.getStockQuantity());
+        product.setImgUrl(productRequest.getImgUrl());
+    }
+}
