@@ -81,13 +81,20 @@ public class CartItemServiceImpl implements CartItemService {
                 .map(this::mapToCartItemResponse).collect(Collectors.toList());
     }
 
+    @Override
+    public void clearCart(String userId) {
+        userRepository.findById(Long.valueOf(userId))
+                .ifPresent(user -> cartItemRepository.deleteByUser(user));
+    }
+
 
     private CartItemResponse mapToCartItemResponse(CartItem cartItem){
         CartItemResponse response = new CartItemResponse();
         response.setId(cartItem.getId().toString());
-        response.setProductName(cartItem.getProduct().getName());
+        response.setProduct(cartItem.getProduct());
         response.setQuantity(cartItem.getQuantity().toString());
         response.setTotalPrice(cartItem.getPrice().toString());
         return response;
     }
+
 }
